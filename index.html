@@ -165,6 +165,7 @@
             max-width: 100%;
             max-height: 100px;
             object-fit: contain;
+            pointer-events: none;
         }
 
         .choice-btn:active {
@@ -368,7 +369,7 @@
 
     <!-- Screen 1: File Selection -->
     <div id="screen-upload" class="screen active">
-        <h1>Choice4 Test App</h1>
+        <h1>Choice4 Test App★</h1>
         <p>Excelファイルをえらんでね！</p>
         <p style="font-size: 0.8rem; color: #888;">「予定表」シートを読み込みます</p>
         <label id="upload-btn-label" for="file-input">
@@ -427,7 +428,7 @@
 
     <script>
         // QUESTIONS_DATA_START
-        const embeddedQuestions = [{"q": "十勝平野では、土地の栄養分が少なくなっていく[A]障害を防ぐため、一年ごとにつくる作物をかえていく輪作が行われています。", "n": 1, "a": "連作", "t": "4択", "choices": ["単作", "連作", "二毛作", "輪作"], "practice": false, "p": 1}, {"q": "十勝平野では、土地の栄養分が少なくなっていく連作障害を防ぐため、一年ごとにつくる作物をかえていく[B]が行われています。", "n": 2, "a": "輪作", "t": "4択", "choices": ["単作", "連作", "二毛作", "輪作"], "practice": false, "p": 1}, {"q": "北海道の気候グラフを選びなさい。残り2つは東京と沖縄のグラフです。", "n": 3, "a": "g04_01_010_00_イ.png", "t": "4択", "choices": ["g04_01_010_00_ア.png", "g04_01_010_00_イ.png", "g04_01_010_00_ウ.png"], "practice": false, "p": 1}, {"q": "北海道の道庁所在地はどこの都市ですか。", "n": 4, "a": "札幌市", "t": "4択", "choices": ["松江市", "那覇市", "盛岡市", "札幌市"], "practice": false, "p": 1}, {"q": "乳牛を飼って、牛乳からさまざまな乳製品をつくる農業を何といいますか。", "n": 5, "a": "酪農", "t": "4択", "choices": ["酪農", "乳農", "牛農", "牧農"], "practice": false, "p": 1}];
+        const embeddedQuestions = [{"q": "福岡県の白地図①：本州と九州をへだてる海峡 g06_14_map_fukuoka_001.png", "n": 1, "a": "関門海峡", "t": "4択", "choices": ["豊後水道", "対馬海峡", "関門海峡", "紀伊水道"], "practice": false, "p": 1}, {"q": "福岡県の白地図②：県北部の政令指定都市 g06_14_map_fukuoka_001.png", "n": 2, "a": "北九州市", "t": "4択", "choices": ["北九州市", "福岡市", "久留米市", "大牟田市"], "practice": false, "p": 1}, {"q": "大分県の白地図①：県北東部に突き出た半島 g06_14_map_ooita_001.png", "n": 3, "a": "国東半島", "t": "", "choices": ["国東半島", "天草半島", "佐田岬半島", "蒲江半島"], "practice": false, "p": 1}, {"q": "大分県の白地図②：県庁所在地 g06_14_map_ooita_001.png", "n": 4, "a": "大分市", "t": "", "choices": ["大分市", "別府市", "中津市", "臼杵市"], "practice": false, "p": 1}, {"q": "2001年にアメリカ同時多発テロが起きた。この時に大きな被害を受けた都市は？", "n": 5, "a": "ニューヨーク", "t": "", "choices": [], "practice": false, "p": 1}];
         // QUESTIONS_DATA_END
 
         let questions = [];
@@ -435,12 +436,6 @@
         let results = [];
         let isJudging = false;
         let isWaitingForCorrection = false;
-
-        function isImage(text) {
-            if (typeof text !== 'string') return false;
-            const lower = text.toLowerCase();
-            return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.gif') || lower.endsWith('.webp');
-        }
 
         const STORAGE_KEY = 'shakai_4taku_progress';
 
@@ -553,7 +548,7 @@
                     
                     rawData.push({
                         q: q, n: num, a: a, t: type_val,
-                        choices: c_val ? c_val.split(/[、，,\n]/).map(s => s.trim()).filter(s => s) : [],
+                        choices: c_val ? c_val.split(/[、\n]/).map(s => s.trim()).filter(s => s) : [],
                         practice: practice, p: getColorPriority(cellI)
                     });
                 }
@@ -585,9 +580,20 @@
             isWaitingForCorrection = false;
             const q = questions[currentIndex];
             progressText.innerText = `${currentIndex + 1} / ${questions.length}`;
-            questionText.innerText = q.q;
             
-            const len = q.q.length;
+            // 問題文の画像判定と表示
+            let pureText = q.q;
+            let questionImgHtml = "";
+            const imgMatch = q.q.match(/[a-zA-Z0-9_\-]+\.(jpg|jpeg|png|gif|webp)/i);
+            if (imgMatch) {
+                const imgFile = imgMatch[0];
+                pureText = q.q.replace(imgFile, "").trim();
+                questionImgHtml = `<br><img src="image/${imgFile}" style="max-width:100%; max-height:200px; margin-top:10px; border-radius:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`;
+            }
+
+            questionText.innerHTML = pureText + questionImgHtml;
+            
+            const len = pureText.length;
             questionText.style.fontSize = len < 15 ? "2.2rem" : len < 30 ? "1.6rem" : len < 60 ? "1.3rem" : "1.1rem";
             
             choiceContainer.innerHTML = "";
@@ -595,6 +601,11 @@
             answerBox.innerText = "";
             answerBox.style.display = "none";
             judgeOverlay.className = "";
+
+            const isImage = (text) => {
+                if (!text || typeof text !== 'string') return false;
+                return /\.(jpg|jpeg|png|gif|webp)$/i.test(text.trim());
+            };
 
             const isChoiceMode = (q.t === "4択");
             
@@ -615,12 +626,12 @@
                 displayChoices.forEach(choiceText => {
                     const btn = document.createElement('button');
                     btn.className = 'choice-btn';
-                    btn.dataset.choice = choiceText;
+                    btn.setAttribute('data-choice', choiceText);
                     if (q.practice && choiceText === q.a) btn.classList.add('practice-hint');
                     
                     if (isImage(choiceText)) {
                         const img = document.createElement('img');
-                        img.src = "image/" + encodeURIComponent(choiceText);
+                        img.src = `image/${choiceText.trim()}`;
                         btn.appendChild(img);
                     } else {
                         btn.innerText = choiceText;
@@ -638,11 +649,7 @@
                 selfCorrectBtn.style.display = "none";
                 
                 if (q.practice) {
-                    if (isImage(q.a)) {
-                        answerBox.innerHTML = `<img src="image/${encodeURIComponent(q.a)}" style="max-height: 100px;">`;
-                    } else {
-                        answerBox.innerText = q.a;
-                    }
+                    answerBox.innerText = q.a;
                     answerBox.style.display = "flex";
                 }
             }
@@ -650,8 +657,8 @@
 
         checkAnsBtn.onclick = () => {
             const q = questions[currentIndex];
-            if (isImage(q.a)) {
-                answerBox.innerHTML = `<img src="image/${encodeURIComponent(q.a)}" style="max-height: 100px;">`;
+            if (/\.(jpg|jpeg|png|gif|webp)$/i.test(q.a.trim())) {
+                answerBox.innerHTML = `<img src="image/${q.a.trim()}" style="max-height:100px; object-fit:contain;">`;
             } else {
                 answerBox.innerText = q.a;
             }
@@ -707,9 +714,10 @@
 
             const buttons = choiceContainer.querySelectorAll('.choice-btn');
             buttons.forEach(b => {
+                const bText = b.getAttribute('data-choice');
                 b.classList.remove('practice-hint');
                 b.classList.add('disabled');
-                if (b.dataset.choice === q.a) {
+                if (bText === q.a) {
                     b.classList.add('correct');
                     if (!isCorrect) b.classList.add('waiting-correct');
                 } else if (b === btn && !isCorrect) {
